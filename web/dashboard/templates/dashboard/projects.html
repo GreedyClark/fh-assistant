@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Проєкти{% endblock %}
+
+{% block content %}
+<main class="page">
+  <div>
+    <p class="eyebrow">За {{ period_label }} знайдено {{ total }}</p>
+    <h1 class="title">Проєкти для тебе</h1>
+  </div>
+
+  <nav class="chips" aria-label="Період">
+    {% for p in periods %}
+      <a class="chip chip--small{% if p.active %} chip--active{% endif %}" href="{{ p.url }}"{% if p.active %} aria-current="true"{% endif %}>{{ p.label }}</a>
+    {% endfor %}
+  </nav>
+
+  <nav class="chips" aria-label="Фільтр за оцінкою">
+    {% for f in filters %}
+      <a class="chip{% if f.active %} chip--active{% endif %}" href="{{ f.url }}"{% if f.active %} aria-current="true"{% endif %}>{{ f.label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="list">
+    {% for c in cards %}
+      <a class="card" href="{{ c.url }}">
+        <div class="card__top">
+          <span class="pill pill--{{ c.tier }}">{{ c.marker }} {{ c.score }}</span>
+          <span class="small muted">{{ c.age }}</span>
+        </div>
+        <span class="card__title">{{ c.title }}</span>
+        <div class="card__meta">
+          <span>{{ c.budget }}</span>
+          <span>{{ c.bids }}</span>
+        </div>
+        {% if c.cross %}<span class="card__note">Інша категорія, але схоже на твоє</span>{% endif %}
+      </a>
+    {% empty %}
+      <p class="empty">За цей період підходящих проєктів немає</p>
+    {% endfor %}
+  </div>
+</main>
+
+{% include "dashboard/tabbar.html" with current="projects" %}
+{% endblock %}

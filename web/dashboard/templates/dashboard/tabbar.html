@@ -1,0 +1,5 @@
+<nav class="tabbar" aria-label="Розділи">
+  <a href="{{ projects_url }}"{% if current == "projects" %} aria-current="page"{% endif %}>Проєкти</a>
+  <a href="{{ stats_url }}"{% if current == "stats" %} aria-current="page"{% endif %}>Статистика</a>
+  <a href="{{ settings_url }}"{% if current == "settings" %} aria-current="page"{% endif %}>Налаштування</a>
+</nav>

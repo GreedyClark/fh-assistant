@@ -1,0 +1,111 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Налаштування{% endblock %}
+
+{% block content %}
+<main class="page">
+  <h1 class="title">Налаштування</h1>
+  {% if saved %}<p class="notice" role="status">Збережено. Бот підхопить зміни під час наступного опитування</p>{% endif %}
+
+  <form method="post" action="{{ settings_action }}" id="settings-form" style="display: flex; flex-direction: column; gap: 16px">
+    <input type="hidden" name="t" value="{{ token }}">
+    <input type="hidden" name="action" value="save">
+
+    <section class="box" style="gap: 14px">
+      <h2 class="subheading">Сповіщення</h2>
+      <label class="switch">
+        <span class="switch__text">
+          <span class="switch__label">Пауза</span>
+          <span class="small muted">Проєкти збираються, але не надходять</span>
+        </span>
+        <input type="checkbox" name="paused"{% if prefs.paused %} checked{% endif %}>
+        <span class="switch__track" aria-hidden="true"></span>
+      </label>
+      <label class="switch">
+        <span class="switch__text">
+          <span class="switch__label">Тихі години</span>
+          <span class="small muted">Нічні проєкти прийдуть уранці</span>
+        </span>
+        <input type="checkbox" name="quiet_enabled"{% if prefs.quiet_enabled %} checked{% endif %}>
+        <span class="switch__track" aria-hidden="true"></span>
+      </label>
+      <div class="grid2">
+        <label class="field">Тихо з
+          <input class="input" type="number" name="quiet_start" min="0" max="23" value="{{ prefs.quiet_start }}">
+        </label>
+        <label class="field">до
+          <input class="input" type="number" name="quiet_end" min="0" max="23" value="{{ prefs.quiet_end }}">
+        </label>
+      </div>
+    </section>
+
+    <section class="box" style="gap: 12px">
+      <div class="range-head">
+        <label class="subheading" for="loud_threshold">Зі звуком від</label>
+        <span class="range-value" data-threshold>{{ prefs.loud_threshold }}</span>
+      </div>
+      <input id="loud_threshold" type="range" name="loud_threshold" min="40" max="90" step="5" value="{{ prefs.loud_threshold }}">
+      <div class="chips">
+        <span class="pill pill--hot">🔥 від <span data-hot-from>{{ hot_from }}</span></span>
+        <span class="pill pill--good">‼️ від <span data-threshold>{{ prefs.loud_threshold }}</span></span>
+        <span class="pill pill--weak">❌ тихо</span>
+      </div>
+    </section>
+
+    <section class="box" style="gap: 14px">
+      <h2 class="subheading">Фільтри</h2>
+      <label class="switch">
+        <span class="switch__text">
+          <span class="switch__label">Інші категорії</span>
+          <span class="small muted">Схожі проєкти з чужих категорій, тихо</span>
+        </span>
+        <input type="checkbox" name="cross_category"{% if prefs.cross_category %} checked{% endif %}>
+        <span class="switch__track" aria-hidden="true"></span>
+      </label>
+      <label class="field field--inline">Мінімальний бюджет, ₴
+        <input class="input input--short" type="number" name="min_budget_uah" min="0" step="50" value="{{ prefs.min_budget_uah }}">
+      </label>
+    </section>
+
+    <button type="submit" class="btn btn--primary">Зберегти</button>
+  </form>
+
+  <section class="box" style="gap: 12px">
+    <h2 class="subheading">Стоп-слова <span class="muted">· {{ prefs.stop_words|length }}</span></h2>
+    <div class="chips" style="gap: 6px">
+      {% for word in prefs.stop_words %}
+        <span class="word">{{ word }}
+          <form method="post" action="{{ settings_action }}">
+            <input type="hidden" name="t" value="{{ token }}">
+            <input type="hidden" name="action" value="remove_word">
+            <input type="hidden" name="word" value="{{ word }}">
+            <button type="submit" aria-label="Прибрати {{ word }}">×</button>
+          </form>
+        </span>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ settings_action }}" class="field">
+      <input type="hidden" name="t" value="{{ token }}">
+      <input type="hidden" name="action" value="add_word">
+      <label for="new-word">Додати слово або кілька через кому</label>
+      <span class="inline-form">
+        <input class="input" id="new-word" type="text" name="word" placeholder="наприклад, wordpress" autocomplete="off">
+        <button type="submit" class="btn btn--inline">Додати</button>
+      </span>
+    </form>
+  </section>
+
+  <section class="grid2">
+    <div class="tile">
+      <span class="tile__label">Аналізів сьогодні</span>
+      <span class="tile__big">{{ usage.today }} / {{ usage.limit }}</span>
+    </div>
+    <div class="tile">
+      <span class="tile__label">Витрати за 30 днів</span>
+      <span class="tile__big">${{ usage.cost|floatformat:3 }}</span>
+    </div>
+  </section>
+</main>
+
+{% include "dashboard/tabbar.html" with current="settings" %}
+{% endblock %}

@@ -21,7 +21,7 @@ The interface is in Ukrainian. All screenshots use demo data.
 - **Monitoring.** Polls `/v2/projects`, catches up on missed pages after a restart, deduplicates in SQLite and backs off with a growing pause on HTTP 429.
 - **Filters.** Skills, minimum budget in UAH (other currencies converted at the National Bank of Ukraine rate), stop words, a client blacklist, quiet hours and pause. Similar projects from other categories also reach the feed, with a label.
 - **Scoring.** Transparent rules: stack match, number of bids, freshness, client history and red flags such as "free test task", contacts outside the platform or a thin description. Markers 🔥 ‼️ ❌; weak projects arrive without sound.
-- **Bid analysis.** Claude Haiku returns a structured answer through tool use: what needs to be done, hours per subtask, risks, questions for the client, a verdict and two drafts. The price is calculated in code: hours × buffer × minimum hourly rate, plus the 30-day market median. The project text is marked as untrusted data in the prompt.
+- **Bid analysis.** Claude Haiku returns a structured answer through tool use: what needs to be done, hours per subtask, risks, questions for the client, a verdict and two drafts. The price is calculated in code: the minimum is realistic hours × hourly rate, the comfortable price adds a time buffer, and the 30-day market median is shown next to them. The project text is marked as untrusted data in the prompt.
 - **Bid submission.** A Mini App form sends `POST /v2/projects/{id}/bids`. Before sending, it checks the text for contacts and amounts (both banned by the platform rules), asks for confirmation and enforces a daily limit.
 - **Bid log and statistics.** Bid statuses, conversion, accuracy of time estimates, median budgets per skill and the hours when matching projects appear.
 - **Heartbeat.** A Telegram alert when Freelancehunt rejects the token or polling has failed for 2 hours. A ping to healthchecks.io after every successful poll catches a full server outage.
@@ -91,7 +91,7 @@ To update: `git pull`, then `collectstatic` and `sudo systemctl restart fh-bot f
 .venv/bin/python -m pytest
 ```
 
-The 52 tests cover parsing of recorded API responses, filters, scoring, deduplication and catch-up, pricing and statistics, bid text checks, the heartbeat and the main Mini App pages. The network and Claude are mocked.
+The tests cover parsing of recorded API responses, filters, scoring, deduplication and catch-up, pricing and statistics, bid text checks, the heartbeat and the main Mini App pages. The network and Claude are mocked.
 
 ## Limitations
 

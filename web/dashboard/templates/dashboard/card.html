@@ -1,0 +1,233 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ project.name|truncatechars:40 }}{% endblock %}
+
+{% block body_attrs %} data-back="{{ back_url }}"{% endblock %}
+
+{% block content %}
+<main class="page page--card">
+  <a class="back" href="{{ back_url }}">
+    <svg aria-hidden="true" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L1 8l7 7"></path></svg>
+    Проєкти
+  </a>
+
+  <div class="card__top">
+    <span class="pill pill--lg pill--{{ tier }}">{{ marker }} {{ score.value }}</span>
+    <span class="small muted">{{ age }}</span>
+  </div>
+  <h1 class="title title--card">{{ project.name }}</h1>
+
+  {% if score.pros or score.cons %}
+  <div class="chips">
+    {% for p in score.pros %}<span class="tag tag--plus">+ {{ p }}</span>{% endfor %}
+    {% for c in score.cons %}<span class="tag tag--minus">− {{ c }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% if cross %}<p class="card__note">Інша категорія, але текст схожий на твої задачі</p>{% endif %}
+
+  <div class="grid2">
+    {% for f in facts %}
+      <div class="tile">
+        <span class="tile__label">{{ f.k }}</span>
+        <span class="tile__value">{{ f.v }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <section class="box">
+    <span class="tile__label">Замовник</span>
+    <span class="tile__value">{{ employer_text }}</span>
+    <span class="small muted">Оплата: {{ safe_text }}</span>
+  </section>
+
+  <section class="box">
+    <span class="tile__label">Опис</span>
+    <p class="description">{{ project.description }}</p>
+  </section>
+
+  {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+
+  {% if analysis %}
+  <section id="analysis" style="display: flex; flex-direction: column; gap: 12px">
+    <h2 class="heading">Аналіз ставки</h2>
+
+    <div class="verdict{% if analysis.verdict == 'skip' %} verdict--skip{% endif %}">
+      <span class="verdict__label">Вердикт</span>
+      <span class="verdict__value">{{ verdict }}</span>
+      {% if analysis.verdict_reason %}<span class="verdict__text">{{ analysis.verdict_reason }}</span>{% endif %}
+      {% for c in analysis.conditions %}<span class="verdict__text">Умова: {{ c }}</span>{% endfor %}
+    </div>
+
+    <div class="grid2">
+      {% for p in prices %}
+        <div class="tile">
+          <span class="tile__label">{{ p.label }}</span>
+          <span class="tile__big">{{ p.value }}</span>
+          <span class="small muted">{{ p.note }}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="small muted" style="margin: 0">{{ budget_line }}</p>
+
+    <div class="box">
+      <div class="row"><span class="subheading">Час</span><span style="font-weight: 700">{{ hours_total }}</span></div>
+      {% for s in analysis.subtasks %}
+        <div class="row"><span>{{ s.name }}</span><span class="row__value">{{ s.optimistic_hours|floatformat:"-1" }} / {{ s.realistic_hours|floatformat:"-1" }} / {{ s.pessimistic_hours|floatformat:"-1" }} год</span></div>
+      {% endfor %}
+      {% if analysis.overhead_hours %}
+        <div class="row"><span>Уточнення, тести, правки</span><span class="row__value">{{ analysis.overhead_hours|floatformat:"-1" }} год</span></div>
+      {% endif %}
+      {% if analysis.unfamiliar %}<p class="small muted">Нове для тебе: {{ analysis.unfamiliar|join:", " }}</p>{% endif %}
+    </div>
+
+    <div class="box">
+      <span class="subheading">Що треба зробити</span>
+      <ul class="bullets">{% for u in analysis.understanding %}<li>{{ u }}</li>{% endfor %}</ul>
+      {% if analysis.unclear %}
+        <span class="subheading">Неясно в ТЗ</span>
+        <ul class="bullets">{% for u in analysis.unclear %}<li>{{ u }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+
+    {% if analysis.risks or analysis.questions %}
+    <div class="box">
+      {% if analysis.risks %}
+        <span class="subheading">Ризики</span>
+        <ul class="bullets risk">{% for r in analysis.risks %}<li>{{ r }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if analysis.questions %}
+        <span class="subheading">Питання замовнику</span>
+        <ul class="bullets">{% for q in analysis.questions %}<li>{{ q }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if analysis.portfolio_ref %}<p class="small muted" style="margin: 0">Робота з портфоліо: {{ analysis.portfolio_ref }}</p>{% endif %}
+
+    {% if drafts and analysis.verdict == "skip" %}
+      <p class="small muted" style="margin: 0">Вердикт «пропустити», тож подавай, тільки якщо впевнений, що потягнеш.</p>
+    {% endif %}
+    {% for d in drafts %}
+      <div class="box">
+        <span class="subheading">{{ d.label }}</span>
+        <p class="description" id="draft-{{ d.id }}">{{ d.text }}</p>
+        <button type="button" class="btn btn--primary btn--inline" data-copy="draft-{{ d.id }}">Копіювати</button>
+      </div>
+    {% endfor %}
+    {% if analysis_enabled %}
+      <form method="post" action="{{ analyze_url }}" data-busy="Аналізую, до хвилини...">
+        <input type="hidden" name="t" value="{{ token }}">
+        <input type="hidden" name="refresh" value="1">
+        <button type="submit" class="btn{% if not drafts %} btn--primary{% endif %}">{% if drafts %}Повторити аналіз{% else %}Написати чернетки{% endif %}</button>
+        <p class="small muted" style="margin: 6px 0 0">Новий запит до Claude, рахується в денний ліміт.</p>
+      </form>
+    {% endif %}
+  </section>
+  {% endif %}
+  {% if send %}
+  <section id="send" class="box">
+    <span class="subheading">Надіслати ставку</span>
+    <p class="small muted">Піде на Freelancehunt від твого імені одразу після підтвердження. Сьогодні ще можна: {{ send.left }}.</p>
+    <form method="post" action="{{ send_url }}" style="display: flex; flex-direction: column; gap: 10px"
+          data-confirm="Надіслати ставку {price} ₴ на {days} дн? Скасувати потім можна тільки на сайті.">
+      <input type="hidden" name="t" value="{{ token }}">
+      <div class="grid2">
+        <label class="field">Ціна, ₴
+          <input class="input" type="number" name="price" min="1" step="any" inputmode="decimal" required value="{{ send.price }}">
+        </label>
+        <label class="field">Термін, днів
+          <input class="input" type="number" name="days" min="1" max="365" required value="{{ send.days }}">
+        </label>
+      </div>
+      <label class="field">Тип угоди
+        <select class="input" name="safe_type">
+          {% for s in send.safe_types %}<option value="{{ s.value }}"{% if s.selected %} selected{% endif %}>{{ s.label }}</option>{% endfor %}
+        </select>
+      </label>
+      {% if drafts|length > 1 %}
+      <div class="grid2">
+        {% for d in drafts %}<button type="button" class="btn" data-fill="draft-{{ d.id }}" data-target="send-comment">{{ d.label|cut:" чернетка" }}</button>{% endfor %}
+      </div>
+      {% endif %}
+      <label class="field">Текст ставки
+        <textarea class="input textarea textarea--tall" id="send-comment" name="comment" maxlength="4000" required placeholder="Напиши текст ставки або зроби «Аналіз ставки», щоб отримати чернетку">{{ send.comment }}</textarea>
+      </label>
+      <button type="submit" class="btn btn--primary"{% if not send.left %} disabled{% endif %}>Надіслати на Freelancehunt</button>
+    </form>
+  </section>
+  {% endif %}
+  {% if bid %}
+  <section id="bid" class="box">
+    <div class="row"><span class="subheading">Моя ставка</span><span class="status status--{{ bid.status }}">{{ bid.status_label }}</span></div>
+    <div class="row"><span class="muted">Ціна</span><span style="font-weight: 700">{{ bid.price }}</span></div>
+    {% if bid.days %}<div class="row"><span class="muted">Термін</span><span class="row__value">{{ bid.days }} дн</span></div>{% endif %}
+    <div class="row"><span class="muted">Подано</span><span class="row__value">{{ bid.submitted_at }}</span></div>
+    {% if bid.actual_hours %}<div class="row"><span class="muted">Фактично годин</span><span class="row__value">{{ bid.actual_hours|floatformat:"-1" }}</span></div>{% endif %}
+    {% if bid.note %}<p class="small muted">{{ bid.note }}</p>{% endif %}
+
+    {% if bid.status == "submitted" %}
+      <div class="status-actions">
+        <form method="post" action="{{ bid_status_url }}"><input type="hidden" name="t" value="{{ token }}"><input type="hidden" name="status" value="won"><button type="submit" class="btn">Виграв</button></form>
+        <form method="post" action="{{ bid_status_url }}"><input type="hidden" name="t" value="{{ token }}"><input type="hidden" name="status" value="lost"><button type="submit" class="btn">Програв</button></form>
+        <form method="post" action="{{ bid_status_url }}"><input type="hidden" name="t" value="{{ token }}"><input type="hidden" name="status" value="no_reply"><button type="submit" class="btn">Тиша</button></form>
+      </div>
+    {% elif bid.status == "won" %}
+      <form method="post" action="{{ bid_status_url }}" class="field">
+        <input type="hidden" name="t" value="{{ token }}">
+        <input type="hidden" name="status" value="done">
+        <label for="actual_hours">Скільки годин реально пішло?</label>
+        <span class="inline-form">
+          <input class="input" id="actual_hours" type="number" name="actual_hours" min="0.5" step="0.5" required>
+          <button type="submit" class="btn btn--inline">Завершив</button>
+        </span>
+      </form>
+    {% endif %}
+  </section>
+  {% else %}
+  <section id="bid" class="box">
+    <span class="subheading">{% if send %}Подав на сайті вручну?{% else %}Подав ставку?{% endif %}</span>
+    <p class="small muted">Відміть, щоб бачити результати й точність оцінок у статистиці.</p>
+    <form method="post" action="{{ bid_url }}" style="display: flex; flex-direction: column; gap: 10px">
+      <input type="hidden" name="t" value="{{ token }}">
+      <div class="grid2">
+        <label class="field">Ціна, ₴
+          <input class="input" type="number" name="price" min="1" step="any" inputmode="decimal"{% if suggested_price %} value="{{ suggested_price }}"{% endif %}>
+        </label>
+        <label class="field">Термін, днів
+          <input class="input" type="number" name="days" min="1" max="365">
+        </label>
+      </div>
+      <label class="field">Нотатка
+        <textarea class="input textarea" name="note" maxlength="1000" placeholder="що пообіцяв, на що звернути увагу"></textarea>
+      </label>
+      <button type="submit" class="btn">Я подав ставку</button>
+    </form>
+  </section>
+  {% endif %}
+</main>
+
+<div class="actions">
+  <div class="actions__inner">
+    {% if not analysis and analysis_enabled %}
+      <form method="post" action="{{ analyze_url }}" data-busy="Аналізую, до хвилини...">
+        <input type="hidden" name="t" value="{{ token }}">
+        <button type="submit" class="btn btn--primary">Аналіз ставки</button>
+      </form>
+    {% else %}
+      <a class="btn btn--primary" href="{{ project.url }}" target="_blank" rel="noopener" data-external>Відкрити на Freelancehunt</a>
+    {% endif %}
+    <div class="grid2">
+      <form method="post" action="{{ skip_url }}">
+        <input type="hidden" name="t" value="{{ token }}">
+        <button type="submit" class="btn">Пропустити</button>
+      </form>
+      {% if project.employer %}
+      <form method="post" action="{{ block_url }}" data-confirm="Заблокувати цього замовника? Його проєкти більше не показуватимуться.">
+        <input type="hidden" name="t" value="{{ token }}">
+        <button type="submit" class="btn btn--danger">Заблокувати</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

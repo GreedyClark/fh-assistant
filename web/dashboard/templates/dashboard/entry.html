@@ -1,0 +1,42 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<main class="page">
+  <p class="eyebrow">FH Assistant</p>
+  <h1 class="title" id="status">Вхід...</h1>
+  <p class="muted" id="hint">Перевіряю, що застосунок відкрито з твого Telegram.</p>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ next|json_script:"next-url" }}
+<script>
+(function () {
+  const next = JSON.parse(document.getElementById("next-url").textContent);
+  const status = document.getElementById("status");
+  const hint = document.getElementById("hint");
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const initData = tg ? tg.initData : "";
+  if (!initData) {
+    status.textContent = "Відкрий через Telegram";
+    hint.textContent = "Цю сторінку можна відкрити лише кнопкою в боті.";
+    return;
+  }
+  const body = new URLSearchParams({ init_data: initData });
+  fetch("{% url 'auth' %}", { method: "POST", body: body })
+    .then(function (response) {
+      if (!response.ok) { throw new Error(response.status); }
+      return response.json();
+    })
+    .then(function (data) {
+      const url = new URL(next, window.location.origin);
+      url.searchParams.set("t", data.token);
+      window.location.replace(url.pathname + url.search + url.hash);
+    })
+    .catch(function () {
+      status.textContent = "Немає доступу";
+      hint.textContent = "Цей застосунок працює лише для власника бота.";
+    });
+})();
+</script>
+{% endblock %}

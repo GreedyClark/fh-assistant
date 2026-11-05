@@ -1,0 +1,14 @@
+[Unit]
+Description=Freelancehunt assistant Mini App
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=USER
+WorkingDirectory=/home/USER/fh-assistant
+ExecStart=/home/USER/fh-assistant/.venv/bin/gunicorn --pythonpath web miniapp.wsgi -b 127.0.0.1:8000 --worker-class gthread --workers 1 --threads 8 --timeout 120 --access-logfile -
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Статистика{% endblock %}
+
+{% block content %}
+<main class="page">
+  <h1 class="title">Статистика</h1>
+
+  <section class="box">
+    <h2 class="subheading">Мої ставки</h2>
+    {% if funnel.total %}
+      <div class="grid3">
+        <div class="tile"><span class="tile__label">Подано</span><span class="tile__big">{{ funnel.total }}</span></div>
+        <div class="tile"><span class="tile__label">Виграно</span><span class="tile__big">{{ funnel.won }}</span></div>
+        <div class="tile"><span class="tile__label">Конверсія</span><span class="tile__big">{% if funnel.conversion is not None %}{{ funnel.conversion }}%{% else %}—{% endif %}</span></div>
+      </div>
+      <div class="row"><span>Чекають відповіді</span><span class="row__value">{{ funnel.waiting }}</span></div>
+      <div class="row"><span>Програно</span><span class="row__value">{{ funnel.lost }}</span></div>
+      <div class="row"><span>Без відповіді</span><span class="row__value">{{ funnel.no_reply }}</span></div>
+      {% if funnel.avg_price_text %}<div class="row"><span>Середня ціна ставки</span><span class="row__value">{{ funnel.avg_price_text }}</span></div>{% endif %}
+    {% else %}
+      <p class="small muted">Ставок ще немає. Після подачі натисни «Я подав ставку» на картці проєкту.</p>
+    {% endif %}
+  </section>
+
+  <section class="box">
+    <h2 class="subheading">Точність оцінок часу</h2>
+    {% if calibration %}
+      <div class="row"><span>Реальні години / оцінка</span><span style="font-weight: 800">x{{ calibration.ratio }}</span></div>
+      <p class="small muted">Завершених проєктів: {{ calibration.count }}. {{ advice }}</p>
+    {% else %}
+      <p class="small muted">З'явиться після першого завершеного проєкту з відміченими годинами.</p>
+    {% endif %}
+  </section>
+
+  <section class="box" style="gap: 4px">
+    <h2 class="subheading">Ринок за 30 днів</h2>
+    {% for m in market %}
+      <div class="market-row">
+        <div class="row"><span style="font-weight: 700">{{ m.name }}</span><span class="row__value">{{ m.count_text }}</span></div>
+        {% if m.median_text %}
+          <div class="row"><span class="muted">Медіана бюджету</span><span style="font-weight: 700">{{ m.median_text }}</span></div>
+          <div class="row"><span class="muted">Типовий діапазон</span><span class="row__value">{{ m.range_text }}</span></div>
+        {% endif %}
+        <span class="small muted">Бюджет вказано в {{ m.with_budget }} з {{ m.count }}</span>
+      </div>
+    {% empty %}
+      <p class="small muted">Даних поки немає.</p>
+    {% endfor %}
+  </section>
+
+  <section class="box">
+    <h2 class="subheading">Коли з'являються твої проєкти</h2>
+    {% if matched_count %}
+      <div class="bars" role="img" aria-label="Кількість твоїх проєктів за годинами доби за 30 днів">
+        {% for h in hours %}
+          <div class="bar{% if not h.count %} bar--empty{% endif %}" style="height: {{ h.height }}%" title="{{ h.hour }}:00, проєктів: {{ h.count }}"></div>
+        {% endfor %}
+      </div>
+      <div class="bars-axis"><span>00</span><span>06</span><span>12</span><span>18–23</span></div>
+      <p class="small muted">Твоїх проєктів за 30 днів: {{ matched_count }}.{% if avg_bids is not None %} Коли бот їх знаходить, ставок у середньому {{ avg_bids }}.{% endif %}</p>
+    {% else %}
+      <p class="small muted">Даних поки немає.</p>
+    {% endif %}
+  </section>
+
+  {% if journal %}
+  <section class="box" style="gap: 0">
+    <h2 class="subheading" style="margin-bottom: 4px">Журнал ставок</h2>
+    {% for item in journal %}
+      <a class="journal-item" href="{{ item.url }}">
+        <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+          <span class="journal-item__name">{{ item.name }}</span>
+          <span class="small muted">{{ item.date }}{% if item.price_text %} · {{ item.price_text }}{% endif %}</span>
+        </span>
+        <span class="status status--{{ item.status }}">{{ item.status_label }}</span>
+      </a>
+    {% endfor %}
+  </section>
+  {% endif %}
+</main>
+
+{% include "dashboard/tabbar.html" with current="stats" %}
+{% endblock %}
